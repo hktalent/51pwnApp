@@ -1,0 +1,70 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: 14
+
+    - name: Install dependencies
+      run: yarn install
+
+    - name: Build Tauri project
+      run: yarn build
+
+    - name: Create macOS dmg
+      run: |
+        # Replace with the command to create a macOS dmg using the build output directory
+        # Make sure to specify the necessary configuration options
+        # Example: create-dmg --source ../dist --output dist/MyApp.dmg
+        create-dmg --source ../dist --output dist/MyApp.dmg
+
+    - name: Create Windows exe
+      run: |
+        # Replace with the command to create a Windows exe using the build output directory
+        # Make sure to specify the necessary configuration options
+        # Example: electron-builder --win --x64 --output dist/
+        electron-builder --win --x64 --output dist/
+
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        draft: false
+        prerelease: false
+
+    - name: Upload macOS dmg
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: dist/MyApp.dmg
+        asset_name: MyApp.dmg
+        asset_content_type: application/octet-stream
+
+    - name: Upload Windows exe
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: dist/MyApp.exe
+        asset_name: MyApp.exe
+        asset_content_type: application/octet-stream
